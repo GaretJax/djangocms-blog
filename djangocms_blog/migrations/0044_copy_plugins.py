@@ -1,8 +1,6 @@
 from django.contrib.auth import get_user_model
 from django.db import migrations
 
-from djangocms_blog.models import Post, PostContent
-
 User = get_user_model()
 
 
@@ -16,6 +14,9 @@ def move_plugins_to_blog_content(apps, schema_editor):
     else:
         migration_user = None
 
+    Post = apps.get_model("djangocms_blog", "Post")
+    PostContent = apps.get_model("djangocms_blog", "PostContent")
+    
     for post in Post.objects.all():
         if not post.postcontent_set.exists():
             # Not yet migrated
