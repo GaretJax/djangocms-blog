@@ -1,6 +1,8 @@
 from django.contrib.auth import get_user_model
 from django.db import migrations
 
+from cms.models import Placeholder as CurrentPlaceholderModel
+
 User = get_user_model()
 
 
@@ -16,7 +18,7 @@ def move_plugins_to_blog_content(apps, schema_editor):
 
     Post = apps.get_model("djangocms_blog", "Post")
     PostContent = apps.get_model("djangocms_blog", "PostContent")
-    
+
     for post in Post.objects.all():
         if not post.postcontent_set.exists():
             # Not yet migrated
@@ -47,14 +49,20 @@ def move_plugins_to_blog_content(apps, schema_editor):
                 translation.delete()
                 # Move plugins to post content placeholders
                 if post.media:
-                    media_plugins = post.media.get_plugins().filter(language=translation.language_code)
+                    media_plugins = (CurrentPlaceholderModel
+                                     .get_plugins(post.media)
+                                     .filter(language=translation.language_code))
                     media_plugins.update(placeholder=content.media)
                 if post.content:
                     print("Moving content plugins...")
-                    content_plugins = post.conent.get_plugins().filter(language=translation.language_code)
+                    content_plugins = (CurrentPlaceholderModel
+                                       .get_plugins(post.content)
+                                       .filter(language=translation.language_code))
                     content_plugins.update(placeholder=content.content)
                 if post.liveblog:
-                    live_plugins = post.liveblog.get_plugin().filter(language=translation.language_code)
+                    live_plugins = (CurrentPlaceholderModel
+                                    .get_plugins(post.liveblog)
+                                    .filter(language=translation.language_code))
                     live_plugins.update(placeholder=content.liveblog)
 
 
