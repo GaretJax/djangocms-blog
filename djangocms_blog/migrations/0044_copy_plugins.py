@@ -1,3 +1,4 @@
+from cms.utils.placeholder import get_placeholder_from_slot
 from django.contrib.auth import get_user_model
 from django.db import migrations
 
@@ -45,17 +46,27 @@ def move_plugins_to_blog_content(apps, schema_editor):
                         state=PUBLISHED if post.publish else DRAFT,
                     )
                 translation.delete()
+
+                # Resolve placeholders
+                post_media = get_placeholder_from_slot(post.placeholders, "media")
+                post_content = get_placeholder_from_slot(post.placeholders, "content")
+                post_liveblog = get_placeholder_from_slot(post.placeholders, "liveblog")
+
+                content_media = get_placeholder_from_slot(content.placeholders, "media")
+                content_content = get_placeholder_from_slot(content.placeholders, "content")
+                content_liveblog = get_placeholder_from_slot(content.placeholders, "liveblog")
+
                 # Move plugins to post content placeholders
-                if post.media:
-                    media_plugins = post.media.cmsplugin_set.filter(language=translation.language_code)
-                    media_plugins.update(placeholder=content.media)
-                if post.content:
+                if post_media:
+                    media_plugins = post_media.cmsplugin_set.filter(language=translation.language_code)
+                    media_plugins.update(placeholder=content_media)
+                if post_content:
                     print("Moving content plugins...")
-                    content_plugins = post.content.cmsplugin_set.filter(language=translation.language_code)
-                    content_plugins.update(placeholder=content.content)
-                if post.liveblog:
-                    live_plugins = post.liveblog.cmsplugin_set.filter(language=translation.language_code)
-                    live_plugins.update(placeholder=content.liveblog)
+                    content_plugins = post_content.cmsplugin_set.filter(language=translation.language_code)
+                    content_plugins.update(placeholder=content_content)
+                if post_liveblog:
+                    live_plugins = post_liveblog.cmsplugin_set.filter(language=translation.language_code)
+                    live_plugins.update(placeholder=content_liveblog)
 
 
 def move_plugins_back_to_blog(apps, schema_editor):
