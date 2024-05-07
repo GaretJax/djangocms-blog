@@ -1,5 +1,6 @@
 from cms.utils.placeholder import get_placeholder_from_slot
 from django.contrib.auth import get_user_model
+from django.contrib.contenttypes.models import ContentType
 from django.db import migrations
 
 User = get_user_model()
@@ -17,6 +18,7 @@ def move_plugins_to_blog_content(apps, schema_editor):
 
     Post = apps.get_model("djangocms_blog", "Post")
     PostContent = apps.get_model("djangocms_blog", "PostContent")
+    content_type = ContentType.objects.get(app_label="djangocms_blog", model="postcontent")
 
     for post in Post.objects.all():
         if not post.postcontent_set.exists():
@@ -47,23 +49,19 @@ def move_plugins_to_blog_content(apps, schema_editor):
                     )
                 translation.delete()
 
-                # Resolve placeholders
-                content_media = get_placeholder_from_slot(content.placeholders, "media")
-                content_content = get_placeholder_from_slot(content.placeholders, "content")
-                content_liveblog = get_placeholder_from_slot(content.placeholders, "liveblog")
-
-                # Move plugins to post content placeholders
                 if post.media:
-                    media_plugins = post.media.cmsplugin_set.filter(language=translation.language_code)
-                    media_plugins.update(placeholder=content_media)
+                    post.media.content_type = content_type
+                    post.media.object_id = content.pk
+                    post.media.save()
                 if post.content:
-                    print("Moving content plugins...")
-                    content_plugins = post.content.cmsplugin_set.filter(language=translation.language_code)
-                    content_plugins.update(placeholder=content_content)
+                    post.content.content_type = content_type
+                    post.content.object_id = content.pk
+                    post.content.save()
                 if post.liveblog:
-                    live_plugins = post.liveblog.cmsplugin_set.filter(language=translation.language_code)
-                    live_plugins.update(placeholder=content_liveblog)
-
+                    post.liveblog.content_type = content_type
+                    post.liveblog.object_id = content.pk
+                    post.liveblog.save()
+                    
 
 def move_plugins_back_to_blog(apps, schema_editor):
     """Adds instances for the new model.ATTENTION: All fields of the model must have a valid default value!"""
