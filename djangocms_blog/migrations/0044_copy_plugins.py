@@ -1,6 +1,4 @@
-from cms.utils.placeholder import get_placeholder_from_slot
 from django.contrib.auth import get_user_model
-from django.contrib.contenttypes.models import ContentType
 from django.db import migrations
 
 User = get_user_model()
@@ -18,7 +16,8 @@ def move_plugins_to_blog_content(apps, schema_editor):
 
     Post = apps.get_model("djangocms_blog", "Post")
     PostContent = apps.get_model("djangocms_blog", "PostContent")
-    content_type = ContentType.objects.get(app_label="djangocms_blog", model="postcontent")
+    ContentType = apps.get_model("contenttypes", "ContentType")
+    content_type, _ = ContentType.objects.get_or_create(app_label="djangocms_blog", model="postcontent")
 
     for post in Post.objects.all():
         if not post.postcontent_set.exists():
@@ -61,7 +60,7 @@ def move_plugins_to_blog_content(apps, schema_editor):
                     post.liveblog.content_type = content_type
                     post.liveblog.object_id = content.pk
                     post.liveblog.save()
-                    
+
 
 def move_plugins_back_to_blog(apps, schema_editor):
     """Adds instances for the new model.ATTENTION: All fields of the model must have a valid default value!"""
