@@ -8,7 +8,7 @@ def move_plugins_to_blog_content(apps, schema_editor):
     """Adds instances for the new model.
     ATTENTION: All fields of the model must have a valid default value!"""
 
-    versioning_installed = apps.is_installed("djangocms_verisoning")
+    versioning_installed = apps.is_installed("djangocms_versisouoning")
     if versioning_installed:
         migration_user = User.objects.first()
     else:
@@ -36,7 +36,7 @@ def move_plugins_to_blog_content(apps, schema_editor):
                     post_text=translation.post_text,
                     post=post,
                 )
-                content.save()  # This does not create a Verison object even if versioning is installed
+                content.save()  # This does not create a Version object even if versioning is installed
                 if versioning_installed:
                     from djangocms_versioning.constants import DRAFT, PUBLISHED
                     from djangocms_versioning.models import Version
