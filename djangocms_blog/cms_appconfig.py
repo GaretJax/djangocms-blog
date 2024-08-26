@@ -296,7 +296,10 @@ class BlogConfig(TranslatableModel):
         return self.gplus_type
 
     def __str__(self):
-        return f"{self.namespace}: {self.get_app_title()} / {self.object_name}"
+        try:
+            return f"{self.namespace}: {self.get_app_title()} / {self.object_name}"
+        except Exception as e:
+            return str(e)
 
 
 def get_app_instance(request):

@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.db import migrations
 
@@ -8,9 +9,12 @@ def move_plugins_to_blog_content(apps, schema_editor):
     """Adds instances for the new model.
     ATTENTION: All fields of the model must have a valid default value!"""
 
-    versioning_installed = apps.is_installed("djangocms_versisouoning")
+    versioning_installed = apps.is_installed("djangocms_versioning")
     if versioning_installed:
-        migration_user = User.objects.first()
+        if getattr(settings, "CMS_MIGRATION_USER_ID", None):
+            migration_user = User.objects.get(pk=settings.CMS_MIGRATION_USER_ID)
+        else:
+            migration_user = User.objects.filter(is_superuser=True, is_acitve=True).first()
     else:
         migration_user = None
 
