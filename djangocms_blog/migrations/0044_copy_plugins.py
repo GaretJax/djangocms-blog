@@ -1,8 +1,22 @@
 from django.conf import settings
 from django.contrib.auth import get_user_model
-from django.db import migrations
+from django.db import migrations, models
 
 User = get_user_model()
+
+
+class BareVersion:
+    """Patches the save method of a model to standard model save."""
+    def __init__(self, model):
+        self.model = model
+
+    def __enter__(self):
+        self.save_method = self.model.save
+        self.model.save = lambda self, *args, **kwargs: super(models.Model, self).save(*args, **kwargs)
+        return self.model
+
+    def __exit(self, exc_type, exc_value, traceback):
+        self.model.save = self.save_method
 
 
 def move_plugins_to_blog_content(apps, schema_editor):
@@ -43,13 +57,15 @@ def move_plugins_to_blog_content(apps, schema_editor):
                 content.save()  # This does not create a Version object even if versioning is installed
                 if versioning_installed:
                     from djangocms_versioning.constants import DRAFT, PUBLISHED
-                    from djangocms_versioning.models import Version
 
-                    Version.objects.create(
-                        content=content,
-                        created_by=migration_user,
-                        state=PUBLISHED if post.publish else DRAFT,
-                    )
+                    Version = apps.get_model("djangocms_versioning", "Version")
+                    with BareVersion(Version) as Version:
+                        Version.objects.create(
+                            number="1",
+                            content=content,
+                            created_by=migration_user,
+                            state=PUBLISHED if post.publish else DRAFT,
+                        )
                 translation.delete()
 
                 if post.media:
