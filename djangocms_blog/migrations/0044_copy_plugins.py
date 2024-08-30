@@ -13,7 +13,7 @@ class BareVersion:
         self.model.save = lambda self, *args, **kwargs: super(models.Model, self).save(*args, **kwargs)
         return self.model
 
-    def __exit(self, exc_type, exc_value, traceback):
+    def __exit__(self, exc_type, exc_value, traceback):
         self.model.save = self.save_method
 
 
@@ -61,7 +61,7 @@ def move_plugins_to_blog_content(apps, schema_editor):
                     with BareVersion(Version) as Version:
                         Version.objects.create(
                             number="1",
-                            content=content,
+                            contents=content,
                             created_by=migration_user,
                             state=PUBLISHED if post.publish else DRAFT,
                         )
