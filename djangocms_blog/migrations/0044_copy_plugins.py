@@ -61,7 +61,8 @@ def move_plugins_to_blog_content(apps, schema_editor):
                     with BareVersion(Version) as Version:
                         Version.objects.create(
                             number="1",
-                            contents=content,
+                            content_type=content_type,  # content generic relation is not avialable in migrations
+                            object_id=content.pk,
                             created_by=migration_user,
                             state=PUBLISHED if post.publish else DRAFT,
                         )
