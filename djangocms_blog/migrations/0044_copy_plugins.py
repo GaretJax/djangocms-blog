@@ -1,5 +1,4 @@
 from django.conf import settings
-from django.contrib.auth import get_user_model
 from django.db import migrations, models
 
 
@@ -9,12 +8,12 @@ class BareVersion:
         self.model = model
 
     def __enter__(self):
-        self.save_method = self.model.save
-        self.model.save = lambda self, *args, **kwargs: super(models.Model, self).save(*args, **kwargs)
+        self.original_save_method = self.model.save
+        self.model.save = models.Model.save
         return self.model
 
     def __exit__(self, exc_type, exc_value, traceback):
-        self.model.save = self.save_method
+        self.model.save = self.original_save_method
 
 
 def move_plugins_to_blog_content(apps, schema_editor):
