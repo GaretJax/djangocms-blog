@@ -51,36 +51,41 @@ def move_plugins_to_blog_content(apps, schema_editor):
             # Not yet migrated
             for translation in post.translations.all():
                 print(f"Copying {translation.language_code} to post content...")
-                content = PostContent(
+                content, created = PostContent.objects.get_or_create(
                     language=translation.language_code,
-                    title=translation.title,
-                    slug=translation.slug,
-                    subtitle=translation.subtitle,
-                    abstract=translation.abstract,
-                    meta_description=translation.meta_description,
-                    meta_keywords=translation.meta_keywords,
-                    meta_title=translation.meta_title,
-                    post_text=translation.post_text,
                     post=post,
+                    defaults={
+                        "title": translation.title,
+                        "slug": translation.slug,
+                        "subtitle": translation.subtitle,
+                        "abstract": translation.abstract,
+                        "meta_description": translation.meta_description,
+                        "meta_keywords": translation.meta_keywords,
+                        "meta_title": translation.meta_title,
+                        "post_text": translation.post_text,
+                    }
                 )
-                content.save()  # This does not create a Version object even if versioning is installed
-                if versioning_installed:
-                    from djangocms_versioning.constants import DRAFT, PUBLISHED
+                if created:
+                    if versioning_installed:
+                        from djangocms_versioning.constants import DRAFT, PUBLISHED
 
-                    Version = apps.get_model("djangocms_versioning", "Version")
-                    with BareVersion(Version) as Version:
-                        Version.objects.create(
-                            number="1",
-                            content_type=content_type,  # content generic relation is not avialable in migrations
-                            object_id=content.pk,
-                            created_by=migration_user,
-                            state=PUBLISHED if post.publish else DRAFT,
-                        )
-                translation.delete()
+                        Version = apps.get_model("djangocms_versioning", "Version")
+                        with BareVersion(Version) as Version:
+                            Version.objects.create(
+                                number="1",
+                                content_type=content_type,  # content generic relation is not avialable in migrations
+                                object_id=content.pk,
+                                created_by=migration_user,
+                                state=PUBLISHED if post.publish else DRAFT,
+                            )
+                    translation.delete()
 
-                move_plugins(post.media, translation.language, content, content_type)
-                move_plugins(post.content, translation.language, content, content_type)
-                move_plugins(post.liveblog, translation.language, content, content_type)
+                    move_plugins(post.media, translation.language, content, content_type)
+                    move_plugins(post.content, translation.language, content, content_type)
+                    move_plugins(post.liveblog, translation.language, content, content_type)
+                else:
+                    print(f"Post content {translation.title} ({translation.language}) already exists, skipping...")
+
         if post.media:
             post.media.delete()
         if post.content:
