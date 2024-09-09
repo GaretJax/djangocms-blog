@@ -87,7 +87,7 @@ def move_plugins_to_blog_content(apps, schema_editor):
                     move_plugins(post.media, content, content_type)
                     move_plugins(post.content, content, content_type)
                     move_plugins(post.liveblog, content, content_type)
-                    translation.delete()
+                    post.delete_translation(translation.language_code)
                 else:
                     print(f"Post content {translation.title} ({translation.language_code}) already exists, skipping...")
 
