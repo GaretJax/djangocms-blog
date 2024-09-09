@@ -16,7 +16,7 @@ class BareVersion:
         self.model.save = self.original_save_method
 
 
-def move_plugins(source, language, content, content_type):
+def move_plugins(source, content, content_type):
     if source:
         new_placeholder = source.__class__.objects.create(
             slot=source.slot,
@@ -24,7 +24,7 @@ def move_plugins(source, language, content, content_type):
             content_type=content_type,
             object_id=content.pk,
         )
-        source.cmsplugin_set.filter(language=language).update(placeholder=new_placeholder)
+        source.cmsplugin_set.filter(language=content.language).update(placeholder=new_placeholder)
 
 
 def move_plugins_to_blog_content(apps, schema_editor):
@@ -80,9 +80,9 @@ def move_plugins_to_blog_content(apps, schema_editor):
                             )
                     translation.delete()
 
-                    move_plugins(post.media, translation.language, content, content_type)
-                    move_plugins(post.content, translation.language, content, content_type)
-                    move_plugins(post.liveblog, translation.language, content, content_type)
+                    move_plugins(post.media, content, content_type)
+                    move_plugins(post.content, content, content_type)
+                    move_plugins(post.liveblog, content, content_type)
                 else:
                     print(f"Post content {translation.title} ({translation.language}) already exists, skipping...")
 
