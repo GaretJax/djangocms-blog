@@ -16,6 +16,17 @@ class BareVersion:
         self.model.save = self.original_save_method
 
 
+def move_plugins(source, language, content, content_type):
+    if source:
+        new_placeholder = source.__class__.objects.create(
+            slot=source.slot,
+            default_width=source.default_width,
+            content_type=content_type,
+            object_id=content.pk,
+        )
+        source.cmsplugin_set.filter(language=language).update(placeholder=new_placeholder)
+
+
 def move_plugins_to_blog_content(apps, schema_editor):
     """Adds instances for the new model.
     ATTENTION: All fields of the model must have a valid default value!"""
@@ -67,18 +78,15 @@ def move_plugins_to_blog_content(apps, schema_editor):
                         )
                 translation.delete()
 
-                if post.media:
-                    post.media.content_type = content_type
-                    post.media.object_id = content.pk
-                    post.media.save()
-                if post.content:
-                    post.content.content_type = content_type
-                    post.content.object_id = content.pk
-                    post.content.save()
-                if post.liveblog:
-                    post.liveblog.content_type = content_type
-                    post.liveblog.object_id = content.pk
-                    post.liveblog.save()
+                move_plugins(post.media, translation.language, content, content_type)
+                move_plugins(post.content, translation.language, content, content_type)
+                move_plugins(post.liveblog, translation.language, content, content_type)
+        if post.media:
+            post.media.delete()
+        if post.content:
+            post.content.delete()
+        if post.liveblog:
+            post.liveblog.delete()
 
 
 def move_plugins_back_to_blog(apps, schema_editor):
