@@ -54,7 +54,7 @@ def move_plugins_to_blog_content(apps, schema_editor):
         if not post.postcontent_set.exists():
             # Not yet migrated
             for translation in post.translations.all():
-                print(f"Copying {translation.language_code} to post content...")
+                print(f"Copying {translation.title} ({translation.language_code}) to post content...")
                 content, created = PostContent.objects.get_or_create(
                     language=translation.language_code,
                     post=post,
@@ -82,13 +82,14 @@ def move_plugins_to_blog_content(apps, schema_editor):
                                 created_by=migration_user,
                                 state=PUBLISHED if post.publish else DRAFT,
                             )
-                    translation.delete()
+                            print("(published)" if post.publish else "(draft)")
 
                     move_plugins(post.media, content, content_type)
                     move_plugins(post.content, content, content_type)
                     move_plugins(post.liveblog, content, content_type)
+                    translation.delete()
                 else:
-                    print(f"Post content {translation.title} ({translation.language}) already exists, skipping...")
+                    print(f"Post content {translation.title} ({translation.language_code}) already exists, skipping...")
 
         if post.media:
             post.media.delete()
