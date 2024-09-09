@@ -25,7 +25,11 @@ def move_plugins(source, content, content_type):
             object_id=content.pk,
         )
         source.cmsplugin_set.filter(language=content.language).update(placeholder=new_placeholder)
-
+        plugins = list(new_placeholder.cmsplugin_set.all())
+        if plugins:
+            for position, plugin in enumerate(plugins, start=1):
+                plugin.position = position
+            plugin.__class__.objects.bulk_update(plugins, ["position"])
 
 def move_plugins_to_blog_content(apps, schema_editor):
     """Adds instances for the new model.
