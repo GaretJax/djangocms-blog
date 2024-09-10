@@ -18,6 +18,7 @@ class BareVersion:
 
 def move_plugins(source, content, content_type):
     if source:
+        print(f"Creating placeholder {source.slot}")
         new_placeholder = source.__class__.objects.create(
             slot=source.slot,
             default_width=source.default_width,
@@ -30,6 +31,7 @@ def move_plugins(source, content, content_type):
             for position, plugin in enumerate(plugins, start=1):
                 plugin.position = position
             plugin.__class__.objects.bulk_update(plugins, ["position"])
+            print(f"Moved {position} plugins")
 
 def move_plugins_to_blog_content(apps, schema_editor):
     """Adds instances for the new model.
@@ -98,7 +100,7 @@ def move_plugins_to_blog_content(apps, schema_editor):
             post.liveblog.delete()
 
     print("Migration 44 finished.", Post.objects.all().count(), "posts survived.")
-    
+
 
 def move_plugins_back_to_blog(apps, schema_editor):
     """Adds instances for the new model.ATTENTION: All fields of the model must have a valid default value!"""
