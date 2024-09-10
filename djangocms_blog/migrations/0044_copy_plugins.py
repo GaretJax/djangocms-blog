@@ -92,13 +92,6 @@ def move_plugins_to_blog_content(apps, schema_editor):
                 else:
                     print(f"Post content {translation.title} ({translation.language_code}) already exists, skipping...")
 
-        if post.media:
-            post.media.delete()
-        if post.content:
-            post.content.delete()
-        if post.liveblog:
-            post.liveblog.delete()
-
     print("Migration 44 finished.", Post.objects.all().count(), "posts survived.")
 
 
