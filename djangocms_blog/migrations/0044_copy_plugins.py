@@ -97,6 +97,8 @@ def move_plugins_to_blog_content(apps, schema_editor):
         if post.liveblog:
             post.liveblog.delete()
 
+    print("Migration 44 finished.", Post.objects.all().count(), "posts survived.")
+    
 
 def move_plugins_back_to_blog(apps, schema_editor):
     """Adds instances for the new model.ATTENTION: All fields of the model must have a valid default value!"""
