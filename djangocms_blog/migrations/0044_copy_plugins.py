@@ -18,7 +18,6 @@ class BareVersion:
 
 def move_plugins(source, content, content_type):
     if source:
-        print(f"Creating placeholder {source.slot}")
         new_placeholder = source.__class__.objects.create(
             slot=source.slot if source.slot != "post_content" else "content",
             default_width=source.default_width,
@@ -31,7 +30,6 @@ def move_plugins(source, content, content_type):
             for position, plugin in enumerate(plugins, start=1):
                 plugin.position = position
             plugin.__class__.objects.bulk_update(plugins, ["position"])
-            print(f"Moved {position} plugins")
 
 
 def move_plugins_to_blog_content(apps, schema_editor):
@@ -85,7 +83,6 @@ def move_plugins_to_blog_content(apps, schema_editor):
                                 created_by=migration_user,
                                 state=PUBLISHED if post.publish else DRAFT,
                             )
-                            print("(published)" if post.publish else "(draft)")
 
                     media = post.media
                     post_content = post.content
@@ -93,19 +90,8 @@ def move_plugins_to_blog_content(apps, schema_editor):
                     move_plugins(media, content, content_type)
                     move_plugins(post_content, content, content_type)
                     move_plugins(liveblog, content, content_type)
-                    # First set the PlaceholderField to None
-                    # to avoid on_delete=CASCADE to delete the post object
-                    post.media = None
-                    post.content = None
-                    post.liveblog = None
-                    post.save()
-                    media.delete()
-                    print(post_content.delete())
-                    liveblog.delete()
                 else:
                     print(f"Post content {translation.title} ({translation.language_code}) already exists, skipping...")
-
-    print("Migration 44 finished.", Post.objects.all().count(), "posts survived.")
 
 
 def move_plugins_back_to_blog(apps, schema_editor):
@@ -119,12 +105,5 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.AddField(
-            model_name="post",
-            name="content",
-            field=models.CharField(
-                blank=True, default="get_author_schemaorg", max_length=200, verbose_name="Schema.org author name"
-            ),
-        ),
         migrations.RunPython(move_plugins_to_blog_content, move_plugins_back_to_blog, elidable=True),
     ]
