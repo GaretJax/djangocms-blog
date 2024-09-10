@@ -20,7 +20,7 @@ def move_plugins(source, content, content_type):
     if source:
         print(f"Creating placeholder {source.slot}")
         new_placeholder = source.__class__.objects.create(
-            slot=source.slot,
+            slot=source.slot if source.slot != "post_content" else "content",
             default_width=source.default_width,
             content_type=content_type,
             object_id=content.pk,
