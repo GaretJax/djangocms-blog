@@ -33,6 +33,7 @@ def move_plugins(source, content, content_type):
             plugin.__class__.objects.bulk_update(plugins, ["position"])
             print(f"Moved {position} plugins")
 
+
 def move_plugins_to_blog_content(apps, schema_editor):
     """Adds instances for the new model.
     ATTENTION: All fields of the model must have a valid default value!"""
@@ -86,9 +87,21 @@ def move_plugins_to_blog_content(apps, schema_editor):
                             )
                             print("(published)" if post.publish else "(draft)")
 
-                    move_plugins(post.media, content, content_type)
-                    move_plugins(post.content, content, content_type)
-                    move_plugins(post.liveblog, content, content_type)
+                    media = post.media
+                    post_content = post.content
+                    liveblog = post.liveblog
+                    move_plugins(media, content, content_type)
+                    move_plugins(post_content, content, content_type)
+                    move_plugins(liveblog, content, content_type)
+                    # First set the PlaceholderField to None
+                    # to avoid on_delete=CASCADE to delete the post object
+                    post.media = None
+                    post.content = None
+                    post.liveblog = None
+                    post.save()
+                    media.delete()
+                    print(post_content.delete())
+                    liveblog.delete()
                 else:
                     print(f"Post content {translation.title} ({translation.language_code}) already exists, skipping...")
 
@@ -106,5 +119,12 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
+        migrations.AddField(
+            model_name="post",
+            name="content",
+            field=models.CharField(
+                blank=True, default="get_author_schemaorg", max_length=200, verbose_name="Schema.org author name"
+            ),
+        ),
         migrations.RunPython(move_plugins_to_blog_content, move_plugins_back_to_blog, elidable=True),
     ]
