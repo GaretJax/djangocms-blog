@@ -2,7 +2,6 @@
 
 import django.db.models.deletion
 import django.db.models.expressions
-import djangocms_text_ckeditor.fields
 import filer.fields.image
 import meta.models
 import parler.fields
@@ -642,7 +641,7 @@ class Migration(migrations.Migration):
                 ),
                 (
                     "abstract",
-                    djangocms_text_ckeditor.fields.HTMLField(blank=True, default="", verbose_name="abstract"),
+                    djangocms_blog.models.HTMLField(blank=True, default="", verbose_name="abstract"),
                 ),
             ],
             options={
@@ -690,7 +689,7 @@ class Migration(migrations.Migration):
                 ("subtitle", models.CharField(blank=True, default="", max_length=767, verbose_name="subtitle")),
                 (
                     "abstract",
-                    djangocms_text_ckeditor.fields.HTMLField(blank=True, default="", verbose_name="abstract"),
+                    djangocms_blog.models.HTMLField(blank=True, default="", verbose_name="abstract"),
                 ),
                 ("meta_description", models.TextField(blank=True, default="", verbose_name="post meta description")),
                 ("meta_keywords", models.TextField(blank=True, default="", verbose_name="post meta keywords")),
@@ -704,7 +703,7 @@ class Migration(migrations.Migration):
                         verbose_name="post meta title",
                     ),
                 ),
-                ("post_text", djangocms_text_ckeditor.fields.HTMLField(blank=True, default="", verbose_name="text")),
+                ("post_text", djangocms_blog.models.HTMLField(blank=True, default="", verbose_name="text")),
                 ("post", models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to="djangocms_blog.post")),
             ],
             options={

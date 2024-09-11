@@ -19,7 +19,6 @@ from django.utils.functional import cached_property
 from django.utils.html import strip_tags
 from django.utils.timezone import now
 from django.utils.translation import get_language, gettext, gettext_lazy as _
-from djangocms_text_ckeditor.fields import HTMLField
 from filer.fields.image import FilerImageField
 from filer.models import ThumbnailOption
 from meta.models import ModelMeta
@@ -51,6 +50,22 @@ except ImportError:  # pragma: no cover
         """
 
         pass
+
+# HTMLField is a custom field that allows to use a rich text editor
+# Probe for djangocms_text first, then for djangocms_text_ckeditor
+# and finally fallback to a simple textarea
+try:
+    from djangocms_text.fields import HTMLField
+except ImportError:  # pragma: no cover
+    try:
+        from djangocms_text_ckeditor.fields import HTMLField
+    except ImportError:
+        from django import forms
+
+        class HTMLField(models.TextField):
+            def __init__(self, *args, **kwargs):
+                kwargs.setdefault("widget", forms.Textarea)
+                super().__init__(*args, **kwargs)
 
 
 def _get_language(instance, language):
