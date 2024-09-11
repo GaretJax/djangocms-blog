@@ -9,20 +9,22 @@ from cms.utils.urlutils import admin_reverse
 from django.apps import apps
 from django.conf import settings
 from django.contrib import admin, messages
-from django.contrib.admin.options import InlineModelAdmin, TO_FIELD_VAR
+from django.contrib.admin import helpers
+from django.contrib.admin.options import InlineModelAdmin, TO_FIELD_VAR, get_content_type_for_model, IS_POPUP_VAR
 from django.contrib.admin.utils import unquote
 from django.contrib.sites.models import Site
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import models
 from django.db.models import Prefetch, signals
 from django.http import Http404, HttpResponseRedirect
+from django.template.response import TemplateResponse
 from django.urls import NoReverseMatch, path
 from django.utils.translation import gettext_lazy as _, ngettext as __
 from django.views.generic import RedirectView
 from parler.admin import TranslatableAdmin
 
 from .cms_config import BlogCMSConfig
-from .forms import CategoryAdminForm
+from .forms import AppConfigForm, CategoryAdminForm
 from .models import BlogCategory, BlogConfig, Post, PostContent
 from .settings import get_setting
 from .utils import is_versioning_enabled
@@ -128,17 +130,19 @@ class ModelAppHookConfig:
         :return: False if no preselected value is available (more than one or no apphook
                  config is present), apphook config instance if exactly one apphook
                  config is defined or apphook config defined in the request or in the current
-                 object, False otherwise
+                 object, None otherwise
         """
         if not obj and not request.GET.get("app_config", False):
             if BlogConfig.objects.count() == 1:
                 return BlogConfig.objects.first()
+            if request.POST.get("app_config", False):
+                return BlogConfig.objects.get(pk=int(request.POST.get("app_config", False)))
             return None
         elif obj and getattr(obj, "app_config", False):
             return getattr(obj, "app_config")
         elif request.GET.get("app_config", False):
-            return BlogConfig.objects.get(pk=int(request.GET.get("app_config", False)))
-        return False
+            return BlogConfig.objects.get(pk=int(request.GET.get("app_config")))
+        return None
 
     def _set_config_defaults(self, request, form, obj=None):
         """
@@ -166,7 +170,7 @@ class ModelAppHookConfig:
     def get_fieldsets(self, request, obj=None):
         """
         If the apphook config must be selected first, returns a fieldset with just the
-         app config field and help text
+        app config field and help text
         :param request:
         :param obj:
         :return:
@@ -211,14 +215,91 @@ class ModelAppHookConfig:
             return_value = getattr(config, name)
         return return_value
 
-    def get_form(self, request, obj=None, **kwargs):
+    def render_app_config_form(self, request, form):
         """
-        Provides a flexible way to get the right form according to the context
+        Render the app config form
+        """
+        admin_form = helpers.AdminForm(
+            form,
+            form.fieldsets,
+            {},
+            model_admin=self,
+        )
+        app_label = self.opts.app_label
+        context = {
+            **self.admin_site.each_context(request),
+            "title": _("Add %s") % self.opts.verbose_name,
+            "adminform": admin_form,
+            "errors": helpers.AdminErrorList(form, []),
+            "media": self.media,
+            "show_save": True,
+            "show_save_and_add": False,
+            "show_save_and_add_another": False,
+            "show_save_and_continue": False,
+            "add": True,
+            "change": False,
+            "opts": self.opts,
+            "content_type_id": get_content_type_for_model(self.model).pk,
+            "save_as": self.save_as,
+            "save_on_top": self.save_on_top,
+            "to_field_var": TO_FIELD_VAR,
+            "is_popup_var": IS_POPUP_VAR,
+            "app_label": app_label,
+            "has_add_permission": self.has_add_permission(request),
+            "has_change_permission": self.has_change_permission(request),
+            "has_view_permission": self.has_view_permission(request),
+            "has_delete_permission": self.has_delete_permission(request),
+            "has_editable_inline_admin_formsets": False,
+        }
+
+        if self.add_form_template is not None:
+            form_template = self.add_form_template
+        else:
+            form_template = self.change_form_template
+        request.current_app = self.admin_site.name
+
+        return TemplateResponse(
+            request,
+            form_template
+            or [
+                "admin/%s/%s/change_form.html" % (app_label, self.opts.model_name),
+                "admin/%s/change_form.html" % app_label,
+                "admin/change_form.html",
+            ],
+            context,
+        )
+
+    def changeform_view(self, request, object_id=None, form_url="", extra_context=None):
+        """
+        Override the changeform_view to set the app_config field to the correct value
 
         For the add view it checks whether the app_config is set; if not, a special form
         to select the namespace is shown, which is reloaded after namespace selection.
         If only one namespace exists, the current is selected and the normal form
         is used.
+        """
+        if object_id is None:
+            # Add new object
+            if request.method == "GET" or "app_config" in request.POST:
+                app_config_default = self._app_config_select(request, None)
+                if not app_config_default:
+                    if request.method == "POST":
+                        form = AppConfigForm(request.POST)
+                    else:
+                        form = AppConfigForm(initial={"app_config": None, "language": request.GET.get("language")})
+                    return self.render_app_config_form(request, form)
+                elif "author" not in request.POST:
+                    get = copy.copy(request.GET)  # Make a copy to modify
+                    get["app_config"] = app_config_default.pk
+                    request.GET = get
+                    request.method = "GET"
+
+        return super().changeform_view(request, object_id, form_url, extra_context)
+
+    def get_form_x(self, request, obj=None, **kwargs):
+        """
+        Provides a flexible way to get the right form according to the context
+
         """
         form = super().get_form(request, obj, **kwargs)
         if "app_config" not in form.base_fields:
@@ -233,10 +314,7 @@ class ModelAppHookConfig:
 
             class InitialForm(form):
                 class Meta(form.Meta):
-                    fields = (
-                        "app_config",
-                        "language",
-                    )
+                    fields = ("app_config",)
 
             form = InitialForm
         form = self._set_config_defaults(request, form, obj)

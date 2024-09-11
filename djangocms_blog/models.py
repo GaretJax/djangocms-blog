@@ -2,6 +2,7 @@ import hashlib
 
 from cms.models import CMSPlugin, PlaceholderRelationField, ContentAdminManager
 from cms.utils.placeholder import get_placeholder_from_slot
+from django.apps import apps
 from django.conf import settings as dj_settings
 from django.contrib import admin
 from django.contrib.auth import get_user_model
@@ -54,18 +55,15 @@ except ImportError:  # pragma: no cover
 # HTMLField is a custom field that allows to use a rich text editor
 # Probe for djangocms_text first, then for djangocms_text_ckeditor
 # and finally fallback to a simple textarea
-try:
+if apps.is_installed("djangocms_text"):
     from djangocms_text.fields import HTMLField
-except ImportError:  # pragma: no cover
-    try:
-        from djangocms_text_ckeditor.fields import HTMLField
-    except ImportError:
-        from django import forms
-
-        class HTMLField(models.TextField):
-            def __init__(self, *args, **kwargs):
-                kwargs.setdefault("widget", forms.Textarea)
-                super().__init__(*args, **kwargs)
+elif apps.is_installed("djangocms_text_ckeditor"):
+    from djangocms_text_ckeditor.fields import HTMLField
+else:
+    class HTMLField(models.TextField):
+        def __init__(self, *args, **kwargs):
+            kwargs.setdefault("widget", forms.Textarea)
+            super().__init__(*args, **kwargs)
 
 
 def _get_language(instance, language):

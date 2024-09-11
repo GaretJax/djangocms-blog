@@ -1,8 +1,9 @@
 from django import forms
-from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.core.validators import MaxLengthValidator
 from django.utils.functional import cached_property
+from django.utils.translation import gettext_lazy as _
+
 from parler.forms import TranslatableModelForm
 from taggit_autosuggest.widgets import TagAutoSuggest
 
@@ -182,3 +183,15 @@ class PostAdminForm(PostAdminFormBase):
                 self.initial["main_image_full"] = self.app_config.default_image_full
             if not self.initial.get("main_image_thumbnail", ""):
                 self.initial["main_image_thumbnail"] = self.app_config.default_image_thumbnail
+
+
+class AppConfigForm(forms.Form):
+    app_config = forms.ModelChoiceField(
+        queryset=BlogConfig.objects.all(),
+        label=_("App Config"),
+        required=True,
+        help_text=_("Select the app config to apply to the new post."),
+    )
+    language = forms.CharField(widget=forms.HiddenInput(), required=False)
+
+    fieldsets = [(None, {"fields": ("app_config", "language")})]
