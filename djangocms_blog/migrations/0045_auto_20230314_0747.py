@@ -4,6 +4,15 @@ import django.db.models.expressions
 from django.db import migrations
 
 
+def remove_old_placeholders(apps, schema_editor):
+    Placeholder = apps.get_model("cms", "Placeholder")
+    ContentType = apps.get_model("contenttypes", "ContentType")
+
+    content_type = ContentType.objects.filter(app_label="djangocms_blog", model="post").first()
+    if content_type:
+        Placeholder.objects.filter(content_type=content_type).delete()
+
+
 class Migration(migrations.Migration):
     dependencies = [
         ("djangocms_blog", "0044_copy_plugins"),
@@ -44,4 +53,5 @@ class Migration(migrations.Migration):
         migrations.DeleteModel(
             name="PostTranslation",
         ),
+        migrations.RunPython(remove_old_placeholders, elidable=True),
     ]
