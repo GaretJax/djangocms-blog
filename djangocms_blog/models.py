@@ -592,13 +592,6 @@ class PostContent(BlogMetaMixin, ModelMeta, models.Model):
     admin_manager = AdminDateTaggedManager()
 
     @property
-    def in_navigation(self):
-        # TODO: This is a workaround as the CMS expects such an attribute, but I have no idea
-        # under what conditions it has to be set to True or False. Maybe the MENU_TYPE of the
-        # Blog AppConfig?
-        return True
-
-    @property
     def author(self):
         return self.post.author
 
